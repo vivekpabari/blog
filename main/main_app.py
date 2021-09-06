@@ -14,7 +14,7 @@ app.config["MONGO_URI"] = "mongodb://localhost:27017/blog"
 app.config['MAIL_SERVER']='smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
 app.config['MAIL_USERNAME'] = 'vivek.v.pabari@gmail.com'
-app.config['MAIL_PASSWORD'] = 'shopno.46'
+app.config['MAIL_PASSWORD'] = 'xyz'
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
 mongo.init_app(app)
