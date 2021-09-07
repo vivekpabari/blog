@@ -1,7 +1,7 @@
 from flask_mail import Mail,Message
 from main_app import app
 import password
-from database.setup import mail
+from main.database.setup import mail
 def config_mail():
     app.config['MAIL_SERVER']='smtp.gmail.com'
     app.config['MAIL_PORT'] = 465

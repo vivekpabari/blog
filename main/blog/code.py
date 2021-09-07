@@ -1,5 +1,5 @@
 from flask import Blueprint,redirect,request,render_template,flash
-from database.setup import mongo
+from main import mongo,mail
 import logging
 
 bp_blog = Blueprint('blog',__name__,'/blog')

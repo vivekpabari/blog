@@ -1,5 +1,5 @@
 from flask import Blueprint,redirect,request,render_template,flash,make_response,jsonify
-from database.setup import mongo,mail
+from main import mail,mongo
 from flask_mail import Message
 import logging
 import json
@@ -9,7 +9,7 @@ import jwt
 from datetime import datetime, timedelta
 
 
-bp_account = Blueprint('account',__name__,'/account')
+bp_account = Blueprint('account',__name__,'/account',template_folder='/templetes')
 
 
 def token_required(f):
@@ -30,74 +30,7 @@ def test(current_user):
     print(current_user)
     return "pass"
 
-""" def token_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        token = None
-        # jwt is passed in the request header
-        if 'x-access-token' in request.headers:
-            token = request.headers['x-access-token']
-        # return 401 if token is not passed
-        if not token:
-            return jsonify({'message' : 'Token is missing !!'}), 401
-  
-        try:
-            # decoding the payload to fetch the stored details
-            data = jwt.decode(token, app.config['SECRET_KEY'])
-            current_user = User.query\
-                .filter_by(public_id = data['public_id'])\
-                .first()
-        except:
-            return jsonify({
-                'message' : 'Token is invalid !!'
-            }), 401
-        # returns the current logged in users contex to the routes
-        return  f(current_user, *args, **kwargs)
-  
-    return decorated
-    # route for logging user in
-@app.route('/login', methods =['POST'])
-def login():
-    # creates dictionary of form data
-    auth = request.form
-  
-    if not auth or not auth.get('email') or not auth.get('password'):
-        # returns 401 if any email or / and password is missing
-        return make_response(
-            'Could not verify',
-            401,
-            {'WWW-Authenticate' : 'Basic realm ="Login required !!"'}
-        )
-  
-    user = User.query\
-        .filter_by(email = auth.get('email'))\
-        .first()
-  
-    if not user:
-        # returns 401 if user does not exist
-        return make_response(
-            'Could not verify',
-            401,
-            {'WWW-Authenticate' : 'Basic realm ="User does not exist !!"'}
-        )
-  
-    if check_password_hash(user.password, auth.get('password')):
-        # generates the JWT Token
-        token = jwt.encode({
-            'public_id': user.public_id,
-            'exp' : datetime.utcnow() + timedelta(minutes = 30)
-        }, app.config['SECRET_KEY'])
-  
-        return make_response(jsonify({'token' : token.decode('UTF-8')}), 201)
-    # returns 403 if password is wrong
-    return make_response(
-        'Could not verify',
-        403,
-        {'WWW-Authenticate' : 'Basic realm ="Wrong Password !!"'}
-    )
-  
-    
-    """
+
 
 
 
@@ -112,7 +45,7 @@ def login_verification():
         if not data or not data['email'] or not data['password']:
             return "Email id or/and password missing"
         else:
-            #doubt 
+            #doubt CLEAR
             
             user = mongo.db.users.find_one({'email':data['email']})
             if  not user:
@@ -121,10 +54,10 @@ def login_verification():
                 if user['password'] == data['password']:
                     #jwt or session
                     token = jwt.encode({
-                        'public_id':user['email'],#error  
+                        'public_id':user['email'],#error when i use '_id'
                         'exp' : datetime.utcnow() + timedelta(minutes=30)
                     },"your secret key")
-                    response = make_response({"token":token},201)
+                    response = make_response({"token":str(token)},201)
                     response.headers['token'] = token
                     response.set_cookie("token", value = token, httponly = True)
                     response.headers['X-Parachutes'] = 'parachutes are cool'
@@ -147,14 +80,14 @@ def register():
 
 @bp_account.route('/account/register_verification' , methods=['GET', 'POST'])
 def register_verification():
-    #check same email does not valid
+    #check same email does not valid DONE
     if request.method == 'POST':
-        print("hii")
-        if not request.form['email'] or not request.form['password'] or not request.form['f_name']  or not request.form['l_name'] or not request.form['mobile']:
+        data = request.form
+        if not data or not data['email'] or not data['password'] or not data['f_name']  or not data['l_name'] or not data['mobile']:
             return "fail"
         else:
             user = mongo.db.users.find_one({"email":request.form['email']})
-            if user != None:
+            if user:
                 return "email already register"
             else:
                 try:
@@ -191,6 +124,7 @@ def sending_mail():
             return "fail"
         user = mongo.db.user.find_one({"email":data['email']})
         print(user)
+        #add time in token pending
         token = bcrypt.hashpw(data['email'].encode('utf-8'),b'$2b$12$T5mTP49XpLT1cRGp.noVoe')
         url = "http://127.0.0.1:5000/account/resetpassword?email="+data['email']+"&token="+token.decode()
         mes = Message(sender="vivek.v.pabari@gmail.com",recipients=[data['email']],subject="reset password",body=url)
@@ -208,15 +142,16 @@ def resetpassword():
         new_token = bcrypt.hashpw(data['email'].encode('utf-8'),b'$2b$12$T5mTP49XpLT1cRGp.noVoe').decode()
         if new_token!=data['token']:
             return "retry"
-        try:
-            mongo.db.users.find_one_and_update({"email":"v"},{'password':"new psa"})
-        except:
-            return "error"
+        response = make_response(render_template("set_password.html"),200)
+        response.set_cookie("reset_token",value="") 
+        return response
 
     else:
         return "Fail"
-
-    
+@bp_account.route('/account/password_set',methods = ['POST','GET'])
+def password_set():
+    print(request.headers.get("Referer"))
+    return request.headers.get("Referer")
 
 
 
