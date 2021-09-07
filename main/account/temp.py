@@ -1,21 +1,105 @@
-from flask import Blueprint,redirect,request,render_template,flash
+from flask import Blueprint,redirect,request,render_template,flash,make_response,jsonify
 from database.setup import mongo,mail
 from flask_mail import Message
 import logging
 import json
 import bcrypt
+from functools import wraps
+import jwt
+from datetime import datetime, timedelta
 
 
 bp_account = Blueprint('account',__name__,'/account')
 
 
-
-
+def token_required(f):
+    @wraps(f)
+    def decorated(*args,**kwargs):
+        token = None
+        token = request.cookies.get('token')
+        print(token)
+        data = jwt.decode(token,"your secret key")
+        current_user = mongo.db.users.find_one({'email':data['public_id']})
+        return f(current_user,*args,**kwargs)
+    return decorated
 @bp_account.route('/account/test')
-def test():
-    mes = Message(sender="vivek.v.pabari@gmail.com",recipients=["vivek.v.pabari@gmail.com"],subject="testing123",body="testing")
-    mail.send(mes)
+@token_required
+def test(current_user):
+    #mes = Message(sender="vivek.v.pabari@gmail.com",recipients=["casteyekna@biyac.com","vivek.v.pabari@gmail.com"],subject="testing",body="testing")
+    #mail.send(mes)
+    print(current_user)
     return "pass"
+
+""" def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        # jwt is passed in the request header
+        if 'x-access-token' in request.headers:
+            token = request.headers['x-access-token']
+        # return 401 if token is not passed
+        if not token:
+            return jsonify({'message' : 'Token is missing !!'}), 401
+  
+        try:
+            # decoding the payload to fetch the stored details
+            data = jwt.decode(token, app.config['SECRET_KEY'])
+            current_user = User.query\
+                .filter_by(public_id = data['public_id'])\
+                .first()
+        except:
+            return jsonify({
+                'message' : 'Token is invalid !!'
+            }), 401
+        # returns the current logged in users contex to the routes
+        return  f(current_user, *args, **kwargs)
+  
+    return decorated
+    # route for logging user in
+@app.route('/login', methods =['POST'])
+def login():
+    # creates dictionary of form data
+    auth = request.form
+  
+    if not auth or not auth.get('email') or not auth.get('password'):
+        # returns 401 if any email or / and password is missing
+        return make_response(
+            'Could not verify',
+            401,
+            {'WWW-Authenticate' : 'Basic realm ="Login required !!"'}
+        )
+  
+    user = User.query\
+        .filter_by(email = auth.get('email'))\
+        .first()
+  
+    if not user:
+        # returns 401 if user does not exist
+        return make_response(
+            'Could not verify',
+            401,
+            {'WWW-Authenticate' : 'Basic realm ="User does not exist !!"'}
+        )
+  
+    if check_password_hash(user.password, auth.get('password')):
+        # generates the JWT Token
+        token = jwt.encode({
+            'public_id': user.public_id,
+            'exp' : datetime.utcnow() + timedelta(minutes = 30)
+        }, app.config['SECRET_KEY'])
+  
+        return make_response(jsonify({'token' : token.decode('UTF-8')}), 201)
+    # returns 403 if password is wrong
+    return make_response(
+        'Could not verify',
+        403,
+        {'WWW-Authenticate' : 'Basic realm ="Wrong Password !!"'}
+    )
+  
+    
+    """
+
+
 
 @bp_account.route('/account/login')
 def login():
@@ -24,18 +108,29 @@ def login():
 @bp_account.route('/account/login_verification',methods = ['POST','GET'])
 def login_verification():
     if request.method == 'POST':
-        if not request.form['email'] or not request.form['password']:
-            return "fail"
+        data = request.form
+        if not data or not data['email'] or not data['password']:
+            return "Email id or/and password missing"
         else:
             #doubt 
-            user = mongo.db.users.find_one({'email':request.form['email']})
-            if  user == None:
+            
+            user = mongo.db.users.find_one({'email':data['email']})
+            if  not user:
                 return "email id not found"
             else:
-                if user['password'] == request.form['password']:
+                if user['password'] == data['password']:
                     #jwt or session
-                    return redirect('/')
+                    token = jwt.encode({
+                        'public_id':user['email'],#error  
+                        'exp' : datetime.utcnow() + timedelta(minutes=30)
+                    },"your secret key")
+                    response = make_response({"token":token},201)
+                    response.headers['token'] = token
+                    response.set_cookie("token", value = token, httponly = True)
+                    response.headers['X-Parachutes'] = 'parachutes are cool'
+                    return response
                 else:
+                    print(type(user['password']),type(data['password']))
                     return "email or password is invalid"
 
 
