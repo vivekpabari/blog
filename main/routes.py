@@ -1,4 +1,7 @@
-from main import app
+from main import app,mongo
+from flask import render_template
+
 @app.route('/')
 def index():
-    return "do your best"
+    li =  mongo.db.blog.find()
+    return render_template("index.html",object_list = li)

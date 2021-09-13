@@ -7,6 +7,7 @@ import bcrypt
 from functools import wraps
 import jwt
 from datetime import datetime, timedelta
+from bson.objectid import ObjectId
 
 
 bp_account = Blueprint('account',__name__,'/account',template_folder='/templetes')
@@ -17,10 +18,13 @@ def token_required(f):
     def decorated(*args,**kwargs):
         token = None
         token = request.cookies.get('token')
-        print(token)
-        data = jwt.decode(token,"your secret key")
-        current_user = mongo.db.users.find_one({'email':data['public_id']})
-        return f(current_user,*args,**kwargs)
+        #decode also check expire time automatic
+        try:
+            data = jwt.decode(token,"your secret key")
+        except jwt.exceptions.ExpiredSignatureError:
+            return "Token is expired"
+        current_user = mongo.db.users.find_one({'_id':ObjectId(data['public_id'])})
+        return f(user = current_user,*args,**kwargs)
     return decorated
 @bp_account.route('/account/test')
 @token_required
@@ -28,7 +32,7 @@ def test(current_user):
     #mes = Message(sender="vivek.v.pabari@gmail.com",recipients=["casteyekna@biyac.com","vivek.v.pabari@gmail.com"],subject="testing",body="testing")
     #mail.send(mes)
     print(current_user)
-    return "pass"
+    return render_template("set_password.html")
 
 
 
@@ -54,25 +58,25 @@ def login_verification():
                 if user['password'] == data['password']:
                     #jwt or session
                     token = jwt.encode({
-                        'public_id':user['email'],#error when i use '_id'
+                        'public_id':str(user['_id']),#error when i use '_id'
                         'exp' : datetime.utcnow() + timedelta(minutes=30)
                     },"your secret key")
                     response = make_response({"token":str(token)},201)
-                    response.headers['token'] = token
                     response.set_cookie("token", value = token, httponly = True)
-                    response.headers['X-Parachutes'] = 'parachutes are cool'
                     return response
                 else:
-                    print(type(user['password']),type(data['password']))
+                    
                     return "email or password is invalid"
 
 
     else:
         return "fail"
     
-
+@bp_account.route("/account/logout")
 def logout():
-    pass
+    response = make_response("done",201)
+    response.set_cookie("token","", httponly = True)
+    return response
 
 @bp_account.route('/account/register')
 def register():
@@ -142,16 +146,26 @@ def resetpassword():
         new_token = bcrypt.hashpw(data['email'].encode('utf-8'),b'$2b$12$T5mTP49XpLT1cRGp.noVoe').decode()
         if new_token!=data['token']:
             return "retry"
-        response = make_response(render_template("set_password.html"),200)
-        response.set_cookie("reset_token",value="") 
+        response = make_response(render_template("set_password.html",token=new_token),200)
+        ##response.set_cookie("reset_token",value="")
+        response.headers['reset_token'] = new_token
+        response.headers['email'] = data['email']
         return response
 
     else:
         return "Fail"
 @bp_account.route('/account/password_set',methods = ['POST','GET'])
 def password_set():
-    print(request.headers.get("Referer"))
-    return request.headers.get("Referer")
+    if request.method == "POST":
+        data = request.form
+        if not data or not data['password']:
+            return "Retry"
+        
+        #check token and return user 
+        mongo.db.users.update_one({"email":user},{"$set":{"password":data['password']}})
+        return "successful"
+    else:
+        return "Error"
 
 
 

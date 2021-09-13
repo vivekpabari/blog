@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block extra_scripts %}
+<link rel="stylesheet" type="text/css" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.bundle.min.js"></script>
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<style>
+  
+  body {
+    background-color: #eee
+}
+
+.bdge {
+    height: 21px;
+    background-color: orange;
+    color: #fff;
+    font-size: 11px;
+    padding: 8px;
+    border-radius: 4px;
+    line-height: 3px
+}
+
+.comments {
+    text-decoration: underline;
+    text-underline-position: under;
+    cursor: pointer
+}
+
+.dot {
+    height: 7px;
+    width: 7px;
+    margin-top: 3px;
+    background-color: #bbb;
+    border-radius: 50%;
+    display: inline-block
+}
+
+.hit-voting:hover {
+    color: blue
+}
+
+.hit-voting {
+    cursor: pointer
+}
+p {
+    font-size:large;
+}
+</style>
+
+
+{% endblock %}
+{% block title %}{{ entry.title }}{% endblock %}
+
+{% block content_title %}{{ entry.title }}{% endblock %}
+{% block content_author %}<h1>BY {{ entry.author }}</h1>{% endblock %}
+
+{% block extra_header %}
+  {% if session.logged_in %}
+    <li><a href="{{ url_for('edit', slug=entry.slug) }}">Edit entry</a></li>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+  <p>{{ entry.content }}</p>
+<p>----------------------------------------------------------------------------------------------------------------------------------------------------------</p>
+<h4>Comment</h4>
+
+<div class="container mt-5 mb-5">
+  <div class="d-flex justify-content-center row">
+      <div class="d-flex flex-column col-md-8">
+          
+          <div class="coment-bottom bg-white p-2 px-4">
+              <form action="/comment/add" method="POST"><input type="hidden" name="blog_id" value="{{ entry._id }}"><div class="d-flex flex-row add-comment-section mt-4 mb-4"><input type="text" class="form-control mr-3" name="content" placeholder="Add comment"><input class="btn btn-primary" type="submit"></div></form>
+              {% if comments is not defined %}
+              <p>No comment yet</p>
+              {% else %}
+              {% for comment in comments%}
+              <div class="commented-section mt-4">
+                  <div class="d-flex flex-row align-items-center commented-user">
+                      <h5 class="mr-2">{{ comment['user_id'] }}</h5><span class="dot mb-1"></span><span class="mb-1 ml-2">4 hours ago</span>
+                  </div>
+                  <div class="comment-text-sm"><span>{{ comment['content'] }}</span></div>
+                  <div class="reply-section">
+                      <div class="d-flex flex-row align-items-center voting-icons"><i class="fa fa-sort-up fa-2x mt-3 hit-voting"></i><i class="fa fa-sort-down fa-2x mb-3 hit-voting"></i><span class="ml-2">10</span><span class="dot ml-2"></span>
+                          <h6 class="ml-2 mt-1">Reply</h6>
+                      </div>
+                  </div>
+              </div>
+              {% endfor %}
+              
+              </div>
+          </div>
+      </div>
+      
+{% endif %}
+  </div>
+  
+</div>
+
+
+{% endblock %}
