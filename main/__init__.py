@@ -2,14 +2,6 @@
 
 from flask import Flask,redirect,request,render_template,session,jsonify
 
-from flask import Flask
-
-
-
-from functools import wraps
-
-import jwt
-
 
 app = Flask(__name__)
 app.config['secret_key'] = "5de28bb0b0ba249162870c676df13ce5"
