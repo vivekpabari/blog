@@ -35,13 +35,7 @@
             {% endif %}
             {% block extra_header %}{% endblock %}
           </ul>
-          {% block search_bar %}
-            <form action="{{ url_for('index') }}" class="navbar-form navbar-right" id="search-form" method="get" role="search">
-              <div class="form-group">
-                <input class="form-control" name="q" placeholder="Search" type="text" value="{% if search %}{{ search }}{% endif %}">
-              </div>
-            </form>
-          {% endblock %}
+          
         </div>
       </div>
     </div>

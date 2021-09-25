@@ -10,7 +10,6 @@ bp_blog = Blueprint('/blog',__name__,'/blog')
 @token_required
 def is_ower(id,user):
     blog = mongo.db.blog.find_one({"_id":ObjectId(id)})
-    
     if not blog:
         return False
     if blog['author'] != user['_id']:

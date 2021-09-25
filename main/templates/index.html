@@ -5,6 +5,11 @@
 {% block content_title %}{% if search %}Search "{{ search }}"{% else %}Blog entries{% endif %}{% endblock %}
 
 {% block content %}
+<style>
+  body{
+    background-image: url("{{url_for('static', filename='bg.jfif')}}");
+  }
+  </style>
   {% for entry in object_list %}
     <h3>
       <a href="/blog/view/{{ entry._id }}">
