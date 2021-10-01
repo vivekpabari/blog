@@ -1,1 +1,0 @@
-https://mysql.tutorials24x7.com/blog/guide-to-design-a-database-for-blog-management-in-mysql
